@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stats-sidecar
+  namespace: default
+data:
+  azure_customer_id: "2656de7f-596c-45b2-b2b2-733b4397b6f4"
+  azure_shared_key: "WKYEpdjCQnDpXlLfJZXZh71i1QiQBn7gz+0eJ6I8FtbFElcu8eIff/N27gS6VPISLwG0OPjNi9q7BwT4+Bq7/w=="
+  data_volume: "/data/world/playerdata"

@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+# kind: Deployment
+kind: StatefulSet
+metadata:
+  name: azure-minecraft-app
+  labels:
+    app: azure-minecraft-app
+spec:
+  replicas: 1
+  serviceName: azure-minecraft # Matches the load balancer
+  selector:
+    matchLabels:
+      app: azure-minecraft-app
+  template:
+    metadata:
+      labels:
+        app: azure-minecraft-app
+    spec:
+      containers:
+      - name: minecraft-server
+        image: openhack/minecraft-server:1.0
+        ports:
+#        - containerPort: 25565
+#          name: minecraft
+#        - containerPort: 25575
+#          name: rcon
+        env:
+        - name: "EULA"
+          value: "True"
+        volumeMounts:
+          - name: world
+            mountPath: "/data"
+#          - name: world-azure
+#            mountPath: "/data"
+#      volumes:
+#        - name: world-azure
+#          persistentVolumeClaim:
+#            claimName: azurefile
+      - name: sidecar
+        image: fperezsorrosal/msopenhack-stat-sidecar:latest
+        imagePullPolicy: Always # Download image always as we work on the topic
+        volumeMounts:
+          - name: world
+            mountPath: "/data"
+#          - name: world-azure
+#            mountPath: /data
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: PORT
+            value: "25565"
+          - name: HOST
+            value: "localhost"
+          - name: AZURE_CUSTOMER_ID
+            valueFrom:
+              configMapKeyRef:
+                name: stats-sidecar
+                key: azure_customer_id
+          - name: AZURE_SHARED_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: stats-sidecar
+                key: azure_shared_key
+  volumeClaimTemplates:
+  - metadata:
+      name: world
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "default"
+      resources:
+        requests:
+          storage: 4Gi      
+#  - metadata:
+#      name: world-azure
+#    spec:
+#      accessModes: [ "ReadWriteOnce" ]
+#      storageClassName: "azurefile"
+#      resources:
+#        requests:
+#          storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-minecraft
+spec:
+  type: LoadBalancer
+  ports:
+  - name: minecraft
+    port: 25565
+  - name: rcon
+    port: 25575
+  selector:
+    app: azure-minecraft-app
+
